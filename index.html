@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0A0500">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JPL">
+  <title>JPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange:#E85200;--orange-hot:#FF6A1A;--gold:#D4A017;--gold-light:#F0C040;
+      --black:#0A0500;--dark:#130800;--dark-mid:#1E0E00;--surface:#2A1500;--surface2:#3A1E00;
+      --text:#F5E8D0;--text-dim:#A08060;--text-muted:#604030;--radius:12px;--radius-sm:8px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;background:var(--black);color:var(--text);font-family:'Barlow',sans-serif;overflow:hidden;overscroll-behavior:none}
+    #app{height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+    .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .25s ease;overflow:hidden}
+    .screen.active{opacity:1;pointer-events:all}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(180deg,var(--dark) 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0}
+    .header-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .header-balance{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--surface2);border-radius:20px;padding:6px 14px;cursor:pointer}
+    .balance-icon{width:16px;height:16px;border-radius:50%;background:conic-gradient(var(--gold) 0deg,var(--orange) 120deg,var(--gold-light) 240deg,var(--gold) 360deg);flex-shrink:0}
+    .balance-val{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold-light);letter-spacing:1px}
+    .balance-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+    .scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:120px;-webkit-overflow-scrolling:touch}
+    .scroll-area::-webkit-scrollbar{display:none}
+    .bottom-nav{position:absolute;bottom:0;left:0;right:0;display:flex;background:var(--dark);border-top:1px solid var(--surface);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;background:none;border:none;cursor:pointer;color:var(--text-muted);font-family:'Barlow',sans-serif;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+    .nav-btn.active{color:var(--orange)}
+    .nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+    /* ONBOARD */
+    #screen-onboard{background:radial-gradient(ellipse at 30% 20%,#3A1500 0%,var(--black) 60%);justify-content:center;align-items:center;padding:40px 30px;gap:32px}
+    .onboard-title{text-align:center}
+    .onboard-title h1{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:8px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+    .onboard-title p{color:var(--text-dim);font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-top:8px;font-weight:300}
+    .onboard-input-group{width:100%;display:flex;flex-direction:column;gap:12px}
+    .onboard-input-group label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:600}
+    .input-field{width:100%;background:var(--surface);border:1px solid var(--surface2);border-radius:var(--radius);padding:14px 16px;color:var(--text);font-family:'Barlow',sans-serif;font-size:16px;outline:none;transition:border-color .2s}
+    .input-field:focus{border-color:var(--orange)}
+    .input-field::placeholder{color:var(--text-muted)}
+    .btn-primary{width:100%;background:linear-gradient(135deg,var(--orange),var(--orange-hot));border:none;border-radius:var(--radius);padding:16px;color:white;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity .2s,transform .1s}
+    .btn-primary:active{opacity:.85;transform:scale(.98)}
+
+    /* HOME */
+    #screen-home{background:var(--black)}
+    .hero-banner{margin:16px;border-radius:var(--radius);background:linear-gradient(135deg,var(--dark-mid),var(--surface));border:1px solid var(--surface2);padding:20px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+    .hero-banner::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(232,82,0,.15) 0%,transparent 70%)}
+    .hero-text h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold-light)}
+    .hero-text p{font-size:12px;color:var(--text-dim);margin-top:4px;font-weight:300}
+    .btn-topup{background:linear-gradient(135deg,var(--orange),var(--orange-hot));border:none;border-radius:var(--radius-sm);padding:10px 18px;color:white;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+    .btn-topup:active{opacity:.8}
+    .section-header{display:flex;align-items:center;padding:20px 20px 12px;gap:12px}
+    .section-type-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .section-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--text-dim)}
+    .section-divider{flex:1;height:1px;background:var(--surface)}
+    .cards-row{display:flex;gap:12px;padding:0 16px 4px;overflow-x:auto;scrollbar-width:none}
+    .cards-row::-webkit-scrollbar{display:none}
+    .card{flex-shrink:0;width:148px;background:var(--dark-mid);border-radius:var(--radius);border:1px solid var(--surface);overflow:hidden;cursor:pointer;transition:transform .2s}
+    .card:active{transform:scale(.97)}
+    .card-thumb{width:100%;height:148px;display:flex;align-items:center;justify-content:center;background:var(--surface);position:relative}
+    .card-type-stripe{position:absolute;top:0;left:0;right:0;height:3px}
+    .card-info{padding:10px 12px}
+    .card-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-meta{font-size:11px;color:var(--text-muted);margin-top:3px}
+    .item-list{padding:0 16px}
+    .item-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--surface);cursor:pointer}
+    .item-row:last-child{border-bottom:none}
+    .item-num{font-family:'Barlow Condensed',sans-serif;font-size:14px;color:var(--text-muted);width:20px;text-align:center;flex-shrink:0}
+    .item-info{flex:1;min-width:0}
+    .item-title{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .item-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+    .item-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .btn-play{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;flex-shrink:0}
+    .btn-play.playing{background:var(--orange);border-color:var(--orange)}
+    .btn-play svg{width:14px;height:14px;fill:var(--text);stroke:none;margin-left:2px}
+    .btn-play.playing svg{margin-left:0}
+    .btn-unlock-small{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--gold);background:none;border:1px solid var(--gold);border-radius:4px;padding:4px 8px;cursor:pointer;white-space:nowrap}
+    .unlocked-badge{font-size:10px;font-weight:600}
+
+    /* PLAYER BAR */
+    #player-bar{position:absolute;bottom:56px;left:0;right:0;background:var(--dark-mid);border-top:1px solid var(--surface2);padding:10px 16px;display:none;align-items:center;gap:12px;z-index:15}
+    #player-bar.visible{display:flex}
+    .player-disc{width:40px;height:40px;flex-shrink:0;animation:spin 4s linear infinite paused}
+    .player-disc.playing{animation-play-state:running}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .player-info{flex:1;min-width:0}
+    .player-title{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .player-type-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+    .player-progress{width:100%;height:2px;background:var(--surface2);border-radius:1px;margin-top:6px;overflow:hidden}
+    .player-progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:1px;width:0%;transition:width .5s linear}
+    .btn-player{width:40px;height:40px;border-radius:50%;background:var(--orange);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .btn-player:active{opacity:.8}
+    .btn-player svg{width:16px;height:16px;fill:white;stroke:none}
+
+    /* VIDEO */
+    #video-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
+    #video-overlay.visible{display:flex}
+    #video-el{width:100%;flex:1;object-fit:contain;background:#000}
+    .video-controls{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--dark)}
+    .btn-video-close{background:none;border:1px solid var(--surface2);border-radius:var(--radius-sm);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;padding:8px 16px}
+
+    /* GROUP */
+    #screen-group{background:var(--black)}
+    .group-hero{height:200px;background:linear-gradient(180deg,var(--surface) 0%,var(--black) 100%);display:flex;flex-direction:column;justify-content:flex-end;padding:20px;position:relative;flex-shrink:0}
+    .group-type-bar{position:absolute;top:0;left:0;right:0;height:4px}
+    .back-btn{position:absolute;top:16px;left:16px;width:36px;height:36px;background:rgba(0,0,0,.5);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .back-btn svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:2}
+    .group-type-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;width:fit-content}
+    .group-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;color:var(--text);line-height:1}
+    .group-meta{font-size:12px;color:var(--text-dim);margin-top:4px}
+    .group-unlock-bar{margin:0 16px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--surface2)}
+    .group-unlock-info p{font-size:13px;color:var(--text-dim)}
+    .group-unlock-info strong{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700}
+    .btn-unlock-group{border:none;border-radius:var(--radius-sm);padding:10px 20px;color:var(--black);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+    .unlocked-group-badge{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700}
+
+    /* TOP UP */
+    #screen-topup{background:var(--black)}
+    .topup-content{padding:20px}
+    .topup-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+    .topup-sub{font-size:13px;color:var(--text-dim);margin-bottom:24px;font-weight:300}
+    .credit-table{background:var(--dark-mid);border-radius:var(--radius);border:1px solid var(--surface2);overflow:hidden;margin-bottom:24px}
+    .credit-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--surface);cursor:pointer;transition:background .15s}
+    .credit-row:last-child{border-bottom:none}
+    .credit-row.selected{background:var(--surface);border-left:3px solid var(--orange)}
+    .credit-amount{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--gold-light)}
+    .credit-desc{font-size:12px;color:var(--text-dim);margin-top:2px}
+    .credit-badge{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);background:var(--surface2);border-radius:6px;padding:4px 10px}
+    .credit-row.selected .credit-badge{background:var(--orange)}
+    .momo-numbers{background:var(--dark-mid);border-radius:var(--radius);border:1px solid var(--surface2);padding:16px;margin-bottom:24px}
+    .momo-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:600;margin-bottom:12px}
+    .momo-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--surface)}
+    .momo-row:last-child{border-bottom:none}
+    .momo-network{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px}
+    .momo-number{font-size:16px;color:var(--text);font-weight:500;letter-spacing:1px}
+    .topup-actions{display:flex;flex-direction:column;gap:12px}
+    .btn-whatsapp{display:flex;align-items:center;justify-content:center;gap:10px;background:#25D366;border:none;border-radius:var(--radius);padding:16px;color:white;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-decoration:none}
+    .btn-form{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--surface);border:1px solid var(--surface2);border-radius:var(--radius);padding:16px;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-decoration:none}
+
+    /* PROFILE */
+    #screen-profile{background:var(--black)}
+    .profile-content{padding:20px}
+    .profile-card{background:var(--dark-mid);border-radius:var(--radius);border:1px solid var(--surface2);padding:20px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
+    .profile-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--black);flex-shrink:0}
+    .profile-info h3{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--text)}
+    .profile-info p{font-size:13px;color:var(--text-dim);margin-top:2px}
+    .profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+    .stat-card{background:var(--dark-mid);border-radius:var(--radius);border:1px solid var(--surface2);padding:16px;text-align:center}
+    .stat-val{font-family:'Bebas Neue',sans-serif;font-size:32px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+    .btn-logout{width:100%;background:var(--surface);border:1px solid var(--surface2);border-radius:var(--radius);padding:14px;color:var(--text-dim);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+
+    /* TOAST */
+    #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);color:var(--text);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:200;border:1px solid var(--surface2)}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    #toast.error{background:#5A1010;border-color:#8A2020}
+    #toast.success{background:#1A3A1A;border-color:var(--orange)}
+    .empty-state{display:flex;flex-direction:column;align-items:center;padding:60px 30px;gap:12px;color:var(--text-muted)}
+    .empty-state p{font-size:14px;text-align:center}
+    .loading-state{display:flex;align-items:center;justify-content:center;padding:40px}
+    .spinner{width:28px;height:28px;border:2px solid var(--surface2);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ONBOARDING -->
+  <div id="screen-onboard" class="screen active">
+    <div style="display:flex;justify-content:center">
+      <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="50" height="120" rx="4" fill="#1A0800"/>
+        <rect x="4" y="8" width="12" height="10" rx="2" fill="#0A0500"/>
+        <rect x="4" y="26" width="12" height="10" rx="2" fill="#0A0500"/>
+        <rect x="4" y="84" width="12" height="10" rx="2" fill="#0A0500"/>
+        <rect x="4" y="102" width="12" height="10" rx="2" fill="#0A0500"/>
+        <text x="18" y="90" font-family="serif" font-size="72" font-weight="bold" fill="url(#jg)">j</text>
+        <circle cx="82" cy="42" r="34" fill="#0A0500" stroke="#D4A017" stroke-width="1.5"/>
+        <circle cx="82" cy="42" r="27" fill="none" stroke="#E85200" stroke-width="1"/>
+        <circle cx="82" cy="42" r="20" fill="none" stroke="#D4A017" stroke-width="1"/>
+        <circle cx="82" cy="42" r="13" fill="none" stroke="#E85200" stroke-width="1"/>
+        <circle cx="82" cy="42" r="6" fill="none" stroke="#D4A017" stroke-width="1"/>
+        <circle cx="82" cy="42" r="3" fill="#D4A017"/>
+        <circle cx="82" cy="42" r="1.5" fill="#0A0500"/>
+        <defs><linearGradient id="jg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D4A017"/><stop offset="100%" stop-color="#E85200"/></linearGradient></defs>
+      </svg>
+    </div>
+    <div class="onboard-title"><h1>JPL</h1><p>Joelhood Pictures Limited</p></div>
+    <div class="onboard-input-group">
+      <label>Your Phone Number</label>
+      <input type="tel" id="phone-input" class="input-field" placeholder="e.g. 0977 123 456" inputmode="tel">
+      <button class="btn-primary" onclick="handleEnter()">Enter</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen">
+    <div class="header">
+      <div class="header-logo">JPL</div>
+      <div class="header-balance" onclick="showScreen('topup')">
+        <div class="balance-icon"></div>
+        <div><div class="balance-val" id="balance-display">0</div><div class="balance-label">Credits</div></div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="hero-banner">
+        <div class="hero-text"><h2>Welcome to JPL</h2><p>Music · Books · Modules · Series</p></div>
+        <button class="btn-topup" onclick="showScreen('topup')">Top Up</button>
+      </div>
+      <div id="home-content"><div class="loading-state"><div class="spinner"></div></div></div>
+    </div>
+    <div id="player-bar">
+      <svg class="player-disc" id="player-disc" viewBox="0 0 40 40" width="40" height="40">
+        <circle cx="20" cy="20" r="19" fill="#1E0E00" stroke="#3A1E00" stroke-width="1"/>
+        <circle cx="20" cy="20" r="14" fill="none" stroke="#E85200" stroke-width=".8"/>
+        <circle cx="20" cy="20" r="9" fill="none" stroke="#D4A017" stroke-width=".8"/>
+        <circle cx="20" cy="20" r="4" fill="#D4A017"/>
+        <circle cx="20" cy="20" r="2" fill="#0A0500"/>
+      </svg>
+      <div class="player-info">
+        <div class="player-title" id="player-title">—</div>
+        <div class="player-type-label" id="player-type">—</div>
+        <div class="player-progress"><div class="player-progress-fill" id="progress-fill"></div></div>
+      </div>
+      <button class="btn-player" onclick="togglePlayPause()">
+        <svg id="playpause-icon" viewBox="0 0 16 16"><path d="M5 3l9 5-9 5V3z"/></svg>
+      </button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" onclick="showScreen('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+      <button class="nav-btn" onclick="showScreen('topup')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</button>
+      <button class="nav-btn" onclick="showScreen('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+    </div>
+  </div>
+
+  <!-- GROUP -->
+  <div id="screen-group" class="screen">
+    <div class="group-hero">
+      <div class="group-type-bar" id="group-type-bar"></div>
+      <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="group-type-pill" id="group-type-pill">—</div>
+      <div class="group-title" id="group-title">—</div>
+      <div class="group-meta" id="group-meta">—</div>
+    </div>
+    <div id="group-unlock-area"></div>
+    <div class="scroll-area"><div class="item-list" id="group-items"></div></div>
+  </div>
+
+  <!-- TOP UP -->
+  <div id="screen-topup" class="screen">
+    <div class="header">
+      <div class="header-logo">Top Up</div>
+      <div class="header-balance">
+        <div class="balance-icon"></div>
+        <div><div class="balance-val" id="balance-display-topup">0</div><div class="balance-label">Credits</div></div>
+      </div>
+    </div>
+    <div class="scroll-area">
+      <div class="topup-content">
+        <div class="topup-title">Add Credits</div>
+        <div class="topup-sub">Select an amount · send MoMo · submit your transaction ID</div>
+        <div class="credit-table">
+          <div class="credit-row selected" data-amount="5" onclick="selectAmount(this)"><div><div class="credit-amount">K5</div><div class="credit-desc">5 music streams</div></div><div class="credit-badge">5 credits</div></div>
+          <div class="credit-row" data-amount="10" onclick="selectAmount(this)"><div><div class="credit-amount">K10</div><div class="credit-desc">12 streams or 2 song unlocks</div></div><div class="credit-badge">12 credits</div></div>
+          <div class="credit-row" data-amount="20" onclick="selectAmount(this)"><div><div class="credit-amount">K20</div><div class="credit-desc">25 streams or 4 song unlocks</div></div><div class="credit-badge">25 credits</div></div>
+          <div class="credit-row" data-amount="50" onclick="selectAmount(this)"><div><div class="credit-amount">K50</div><div class="credit-desc">70 streams or unlock an album</div></div><div class="credit-badge">70 credits</div></div>
+          <div class="credit-row" data-amount="70" onclick="selectAmount(this)"><div><div class="credit-amount">K70</div><div class="credit-desc">95 streams or unlock a course</div></div><div class="credit-badge">95 credits</div></div>
+        </div>
+        <div class="momo-numbers">
+          <div class="momo-title">Pay via MoMo</div>
+          <div class="momo-row"><span class="momo-network" style="color:#E85200">Airtel Money</span><span class="momo-number">0977 858 275</span></div>
+          <div class="momo-row"><span class="momo-network" style="color:#FFCC00">MTN MoMo</span><span class="momo-number">0967 897 668</span></div>
+        </div>
+        <div class="topup-actions">
+          <a class="btn-whatsapp" href="#" onclick="openWhatsApp(event)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send via WhatsApp
+          </a>
+          <a id="btn-form" class="btn-form" href="https://forms.gle/DsGQyNTPrskjHpp76" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Submit via Form
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+      <button class="nav-btn active" onclick="showScreen('topup')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</button>
+      <button class="nav-btn" onclick="showScreen('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="screen-profile" class="screen">
+    <div class="header"><div class="header-logo">Profile</div></div>
+    <div class="scroll-area">
+      <div class="profile-content">
+        <div class="profile-card">
+          <div class="profile-avatar">J</div>
+          <div class="profile-info"><h3 id="profile-name">—</h3><p id="profile-phone">—</p></div>
+        </div>
+        <div class="profile-stats">
+          <div class="stat-card"><div class="stat-val" id="stat-balance">0</div><div class="stat-label">Credits</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-unlocked">0</div><div class="stat-label">Unlocked</div></div>
+        </div>
+        <button class="btn-logout" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+      <button class="nav-btn" onclick="showScreen('topup')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Top Up</button>
+      <button class="nav-btn active" onclick="showScreen('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</button>
+    </div>
+  </div>
+
+  <!-- VIDEO OVERLAY -->
+  <div id="video-overlay">
+    <video id="video-el" controls playsinline></video>
+    <div class="video-controls">
+      <button class="btn-video-close" onclick="closeVideo()">✕ Close</button>
+      <div id="video-title" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <audio id="audio-el" preload="none"></audio>
+</div>
+
+<script>
+const WORKER   = 'https://flat-hall-8e81.joelhoodpictures.workers.dev';
+const WA_NUM   = '260977858275';
+const FORM_URL = 'https://forms.gle/DsGQyNTPrskjHpp76';
+
+// Type config — drives all rendering and credit logic per content type
+const TYPE = {
+  Music:     { color:'#E85200', label:'Music',       streamCost:1, groupLabel:'Album',  },
+  Audiobook: { color:'#4A90D9', label:'Audiobook',   streamCost:2, groupLabel:'Book',   },
+  Module:    { color:'#7BC67A', label:'Audio Module', streamCost:2, groupLabel:'Course', },
+  Series:    { color:'#C67AB5', label:'Series',       streamCost:2, groupLabel:'Season', }
+};
+
+// Maps group type back to content type
+const G2C = { Album:'Music', Book:'Audiobook', Course:'Module', Season:'Series' };
+
+// Unlock costs per locked spec
+const UNLOCK_COSTS = {
+  song:6, album:30, chapter:6, book:70, lesson:6, course:95, episode:6, season:50
+};
+
+const S = {
+  phone   : localStorage.getItem('jpl_phone') || '',
+  balance : parseInt(localStorage.getItem('jpl_balance') || '0'),
+  unlocked: (localStorage.getItem('jpl_unlocked')||'').split(',').filter(Boolean),
+  groups  : (localStorage.getItem('jpl_groups')||'').split(',').filter(Boolean),
+  lastId  : localStorage.getItem('jpl_lastId') || '',
+  lastTime: localStorage.getItem('jpl_lastTime') || '',
+  catalog : { content:[], groups:[] },
+  curGroup: null
+};
+
+const audioEl = document.getElementById('audio-el');
+const videoEl = document.getElementById('video-el');
+let isPlaying=false, currentItem=null, progressTimer=null, selectedAmount='5';
+
+window.addEventListener('load', () => {
+  document.getElementById('btn-form').href = FORM_URL;
+  if (S.phone) { showScreen('home'); Promise.all([loadCatalog(), syncBalance()]); }
+  else showScreen('onboard');
+});
+
+// ── NAVIGATION ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const map = {home:0, group:0, topup:1, profile:2};
+  document.querySelectorAll('.bottom-nav').forEach(nav => {
+    nav.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i === map[name]));
+  });
+  updateBal();
+  if (name === 'profile') updateProfile();
+}
+function goBack() { showScreen('home'); }
+
+// ── ONBOARD ──
+async function handleEnter() {
+  const raw = document.getElementById('phone-input').value.trim();
+  if (!raw) { toast('Enter your phone number','error'); return; }
+  const phone = normPhone(raw);
+  if (phone.length < 11) { toast('Enter a valid Zambian number','error'); return; }
+  S.phone = phone;
+  localStorage.setItem('jpl_phone', phone);
+  showScreen('home');
+  await Promise.all([loadCatalog(), syncBalance()]);
+}
+
+// ── API ──
+async function api(action, params={}) {
+  const qs = new URLSearchParams({action, phone:S.phone, ...params}).toString();
+  const r = await fetch(`${WORKER}/?${qs}`);
+  return r.json();
+}
+
+async function syncBalance() {
+  try {
+    const d = await api('checkBalance');
+    if (d.error) return;
+    S.balance  = d.balance;
+    S.unlocked = d.unlockedContent ? d.unlockedContent.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    S.groups   = d.unlockedGroups  ? d.unlockedGroups.split(',').map(s=>s.trim()).filter(Boolean)  : [];
+    localStorage.setItem('jpl_balance',  S.balance);
+    localStorage.setItem('jpl_unlocked', S.unlocked.join(','));
+    localStorage.setItem('jpl_groups',   S.groups.join(','));
+    updateBal();
+  } catch(e) {}
+}
+
+async function loadCatalog() {
+  try {
+    const d = await fetch(`${WORKER}/?action=getCatalog`).then(r=>r.json());
+    if (d.error) { renderErr(); return; }
+    S.catalog = d;
+    renderHome();
+  } catch(e) { renderErr(); }
+}
+
+// ── HOME RENDER ──
+function renderHome() {
+  const el = document.getElementById('home-content');
+  const { content, groups } = S.catalog;
+  if (!content.length && !groups.length) {
+    el.innerHTML = '<div class="empty-state"><p>Content coming soon.</p></div>';
+    return;
+  }
+
+  let html = '';
+
+  // Music
+  const albums  = groups.filter(g => g.type === 'Album');
+  const singles = content.filter(c => c.type === 'Music' && !c.groupId);
+  if (albums.length || singles.length) {
+    html += secHeader('Music', '#E85200');
+    if (albums.length)  html += '<div class="cards-row">' + albums.map(groupCard).join('') + '</div>';
+    if (singles.length) html += '<div class="item-list">' + singles.map((c,i)=>itemRow(c,i+1)).join('') + '</div>';
+  }
+
+  // Audiobooks
+  const books = groups.filter(g => g.type === 'Book');
+  if (books.length) {
+    html += secHeader('Audiobooks', '#4A90D9');
+    html += '<div class="cards-row">' + books.map(groupCard).join('') + '</div>';
+  }
+
+  // Modules
+  const courses = groups.filter(g => g.type === 'Course');
+  if (courses.length) {
+    html += secHeader('Audio Modules', '#7BC67A');
+    html += '<div class="cards-row">' + courses.map(groupCard).join('') + '</div>';
+  }
+
+  // Series
+  const seasons = groups.filter(g => g.type === 'Season');
+  if (seasons.length) {
+    html += secHeader('Series', '#C67AB5');
+    html += '<div class="cards-row">' + seasons.map(groupCard).join('') + '</div>';
+  }
+
+  el.innerHTML = html || '<div class="empty-state"><p>Content coming soon.</p></div>';
+}
+
+function renderErr() {
+  document.getElementById('home-content').innerHTML =
+    '<div class="empty-state"><p>Could not load content. Check your connection.</p></div>';
+}
+
+function secHeader(title, color) {
+  return `<div class="section-header"><div class="section-type-dot" style="background:${color}"></div><span class="section-title">${title}</span><div class="section-divider"></div></div>`;
+}
+
+function groupCard(g) {
+  const ct  = G2C[g.type] || 'Music';
+  const cfg = TYPE[ct];
+  const locked = !S.groups.includes(g.groupId);
+  return `<div class="card" onclick="openGroup('${g.groupId}')">
+    <div class="card-thumb"><div class="card-type-stripe" style="background:${cfg.color}"></div>${typeIcon(ct)}</div>
+    <div class="card-info">
+      <div class="card-title">${g.title}</div>
+      <div class="card-meta" style="color:${locked?'var(--text-muted)':cfg.color}">${locked ? g.unlockCost+' credits' : '🔓 Unlocked'}</div>
+    </div>
+  </div>`;
+}
+
+function itemRow(item, num) {
+  const cfg = TYPE[item.type] || TYPE.Music;
+  const unlocked = S.unlocked.includes(item.contentId);
+  const active   = currentItem && currentItem.contentId === item.contentId && isPlaying;
+  return `<div class="item-row">
+    <div class="item-num">${num}</div>
+    <div class="item-info">
+      <div class="item-title">${item.title}</div>
+      <div class="item-sub" style="color:${cfg.color}">${cfg.label} · ${item.creditCost} credit${item.creditCost>1?'s':''}</div>
+    </div>
+    <div class="item-actions">
+      ${unlocked
+        ? `<span class="unlocked-badge" style="color:${cfg.color}">UNLOCKED</span>`
+        : `<button class="btn-unlock-small" style="color:${cfg.color};border-color:${cfg.color}" onclick="handleUnlock('${item.contentId}','${item.type}',event)">6 ◆</button>`}
+      <button class="btn-play${active?' playing':''}" style="${active?'background:'+cfg.color+';border-color:'+cfg.color:''}" onclick="handlePlay('${item.contentId}','${escQ(item.title)}','${item.type}',event)">
+        <svg viewBox="0 0 16 16">${active?'<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>':'<path d="M5 3l9 5-9 5V3z"/>'}</svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── GROUP ──
+function openGroup(groupId) {
+  const g = S.catalog.groups.find(x => x.groupId === groupId);
+  if (!g) return;
+  S.curGroup = g;
+  const ct      = G2C[g.type] || 'Music';
+  const cfg     = TYPE[ct];
+  const items   = S.catalog.content
+    .filter(c => c.groupId === groupId)
+    .sort((a,b) => (parseInt(a.segmentOrder)||0)-(parseInt(b.segmentOrder)||0));
+  const locked  = !S.groups.includes(groupId);
+  const unitLabel = g.type==='Album'?'tracks':g.type==='Book'?'chapters':g.type==='Course'?'lessons':'episodes';
+
+  document.getElementById('group-type-bar').style.background = cfg.color;
+  document.getElementById('group-title').textContent = g.title;
+  document.getElementById('group-meta').textContent  = `${items.length} ${unitLabel}`;
+  const pill = document.getElementById('group-type-pill');
+  pill.textContent = cfg.groupLabel;
+  pill.style.cssText = `background:${cfg.color}22;color:${cfg.color};border:1px solid ${cfg.color}44`;
+
+  document.getElementById('group-unlock-area').innerHTML = locked
+    ? `<div class="group-unlock-bar"><div class="group-unlock-info"><p>Unlock everything</p><strong style="color:${cfg.color}">${g.unlockCost} credits</strong></div><button class="btn-unlock-group" style="background:${cfg.color}" onclick="handleUnlockGroup('${groupId}','${ct}')">Unlock All</button></div>`
+    : `<div class="group-unlock-bar"><div class="group-unlock-info"><p>Full Access</p></div><span class="unlocked-group-badge" style="color:${cfg.color}">🔓 UNLOCKED</span></div>`;
+
+  document.getElementById('group-items').innerHTML = items.map((c,i)=>itemRow(c,i+1)).join('');
+  showScreen('group');
+}
+
+// ── PLAY ──
+async function handlePlay(contentId, title, type, e) {
+  e.stopPropagation();
+  const cfg  = TYPE[type] || TYPE.Music;
+  const cost = cfg.streamCost;
+
+  if (!S.unlocked.includes(contentId)) {
+    const now  = Date.now();
+    const last = S.lastTime ? new Date(S.lastTime).getTime() : 0;
+    if (!(S.lastId === contentId && (now-last) <= 600000) && S.balance < cost) {
+      toast(`Need ${cost} credit${cost>1?'s':''} to play`, 'error');
+      setTimeout(() => showScreen('topup'), 1000);
+      return;
+    }
+  }
+
+  try {
+    const d = await api('play', { contentId });
+    if (d.error) { toast(d.error,'error'); if(d.error.includes('credit')) setTimeout(()=>showScreen('topup'),1000); return; }
+    if (d.balance !== undefined) { S.balance=d.balance; localStorage.setItem('jpl_balance',S.balance); updateBal(); }
+    S.lastId=contentId; S.lastTime=new Date().toISOString();
+    localStorage.setItem('jpl_lastId',S.lastId); localStorage.setItem('jpl_lastTime',S.lastTime);
+    if (type==='Series') playVideo(d.streamUrl, title);
+    else playAudio(d.streamUrl, title, type, contentId);
+  } catch(err) { toast('Connection error. Try again.','error'); }
+}
+
+function playAudio(url, title, type, contentId) {
+  const cfg = TYPE[type] || TYPE.Music;
+  audioEl.src = url;
+  audioEl.play().then(() => {
+    isPlaying=true; currentItem={contentId,title,type};
+    document.getElementById('player-title').textContent = title;
+    document.getElementById('player-type').textContent  = cfg.label;
+    document.getElementById('player-bar').classList.add('visible');
+    document.getElementById('player-disc').classList.add('playing');
+    document.getElementById('playpause-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    startProg(); renderHome(); if(S.curGroup) openGroup(S.curGroup.groupId);
+  }).catch(()=>toast('Tap play again',''));
+}
+
+function playVideo(url, title) {
+  videoEl.src=url;
+  document.getElementById('video-title').textContent=title;
+  document.getElementById('video-overlay').classList.add('visible');
+  videoEl.play().catch(()=>{});
+}
+
+function closeVideo() { videoEl.pause(); videoEl.src=''; document.getElementById('video-overlay').classList.remove('visible'); }
+
+function togglePlayPause() {
+  if (isPlaying) {
+    audioEl.pause(); isPlaying=false;
+    document.getElementById('player-disc').classList.remove('playing');
+    document.getElementById('playpause-icon').innerHTML='<path d="M5 3l9 5-9 5V3z"/>';
+    clearInterval(progressTimer);
+  } else {
+    audioEl.play(); isPlaying=true;
+    document.getElementById('player-disc').classList.add('playing');
+    document.getElementById('playpause-icon').innerHTML='<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    startProg();
+  }
+}
+
+function startProg() {
+  clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    if (!audioEl.duration) return;
+    document.getElementById('progress-fill').style.width = (audioEl.currentTime/audioEl.duration*100)+'%';
+  }, 500);
+}
+
+audioEl.addEventListener('ended', () => {
+  isPlaying=false;
+  document.getElementById('player-disc').classList.remove('playing');
+  document.getElementById('playpause-icon').innerHTML='<path d="M5 3l9 5-9 5V3z"/>';
+  document.getElementById('progress-fill').style.width='0%';
+  clearInterval(progressTimer);
+});
+audioEl.addEventListener('error', () => toast('Playback error. Check connection.','error'));
+
+// ── UNLOCK ──
+async function handleUnlock(contentId, type, e) {
+  e.stopPropagation();
+  if (S.balance < 6) { toast('Need 6 credits to unlock','error'); setTimeout(()=>showScreen('topup'),1000); return; }
+  try {
+    const d = await api('unlockContent', { contentId });
+    if (d.error) { toast(d.error,'error'); return; }
+    S.balance=d.balance;
+    if (!S.unlocked.includes(contentId)) S.unlocked.push(contentId);
+    localStorage.setItem('jpl_balance',S.balance); localStorage.setItem('jpl_unlocked',S.unlocked.join(','));
+    updateBal(); toast('Unlocked permanently','success'); renderHome(); if(S.curGroup) openGroup(S.curGroup.groupId);
+  } catch(e) { toast('Connection error. Try again.','error'); }
+}
+
+async function handleUnlockGroup(groupId, contentType) {
+  const g = S.catalog.groups.find(x => x.groupId===groupId);
+  if (!g) return;
+  const cost = Number(g.unlockCost);
+  if (S.balance < cost) { toast(`Need ${cost} credits`,'error'); setTimeout(()=>showScreen('topup'),1000); return; }
+  try {
+    const d = await api('unlockGroup', { groupId });
+    if (d.error) { toast(d.error,'error'); return; }
+    S.balance=d.balance;
+    if (!S.groups.includes(groupId)) S.groups.push(groupId);
+    S.catalog.content.filter(c=>c.groupId===groupId).forEach(c=>{ if(!S.unlocked.includes(c.contentId)) S.unlocked.push(c.contentId); });
+    localStorage.setItem('jpl_balance',S.balance); localStorage.setItem('jpl_unlocked',S.unlocked.join(',')); localStorage.setItem('jpl_groups',S.groups.join(','));
+    updateBal(); toast('Full access unlocked','success'); openGroup(groupId);
+  } catch(e) { toast('Connection error. Try again.','error'); }
+}
+
+// ── TOP UP ──
+function selectAmount(el) { document.querySelectorAll('.credit-row').forEach(r=>r.classList.remove('selected')); el.classList.add('selected'); selectedAmount=el.dataset.amount; }
+function openWhatsApp(e) {
+  e.preventDefault();
+  const msg = `MUSIC. K${selectedAmount}. TXN: [your transaction ID]. Name: [your name]. Number: ${S.phone?formatPhone(S.phone):'[your number]'}`;
+  window.open(`https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// ── PROFILE ──
+function updateProfile() {
+  document.getElementById('profile-phone').textContent  = formatPhone(S.phone);
+  document.getElementById('stat-balance').textContent   = S.balance;
+  document.getElementById('stat-unlocked').textContent  = S.unlocked.length;
+}
+function logout() {
+  if (!confirm('Sign out?')) return;
+  localStorage.clear();
+  Object.assign(S,{phone:'',balance:0,unlocked:[],groups:[],lastId:'',lastTime:''});
+  audioEl.pause(); showScreen('onboard');
+}
+
+// ── HELPERS ──
+function updateBal() {
+  document.getElementById('balance-display').textContent       = S.balance;
+  document.getElementById('balance-display-topup').textContent = S.balance;
+}
+function toast(msg, type='') {
+  const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type;
+  setTimeout(()=>t.className='',2800);
+}
+function normPhone(p) { p=p.replace(/\D/g,''); if(p.startsWith('0'))p='260'+p.slice(1); if(!p.startsWith('260'))p='260'+p; return p; }
+function formatPhone(p) { if(p.startsWith('260'))p='0'+p.slice(3); return p.replace(/(\d{4})(\d{3})(\d{3})/,'$1 $2 $3'); }
+function escQ(s) { return s.replace(/'/g,"\\'"); }
+
+function typeIcon(type) {
+  if (type==='Music')     return `<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#1E0E00" stroke="#3A1E00"/><circle cx="32" cy="32" r="22" fill="none" stroke="#E85200" stroke-width="1"/><circle cx="32" cy="32" r="14" fill="none" stroke="#D4A017" stroke-width="1"/><circle cx="32" cy="32" r="6" fill="#D4A017"/><circle cx="32" cy="32" r="3" fill="#0A0500"/></svg>`;
+  if (type==='Audiobook') return `<svg width="64" height="64" viewBox="0 0 64 64"><rect x="12" y="8" width="40" height="50" rx="4" fill="#1E0E00" stroke="#4A90D9"/><line x1="20" y1="22" x2="44" y2="22" stroke="#4A90D9" stroke-width="1.5"/><line x1="20" y1="30" x2="44" y2="30" stroke="#4A90D9"/><line x1="20" y1="38" x2="36" y2="38" stroke="#4A90D9"/></svg>`;
+  if (type==='Module')    return `<svg width="64" height="64" viewBox="0 0 64 64"><rect x="8" y="14" width="48" height="36" rx="4" fill="#1E0E00" stroke="#7BC67A"/><path d="M26 24l16 8-16 8Z" fill="#7BC67A"/></svg>`;
+  if (type==='Series')    return `<svg width="64" height="64" viewBox="0 0 64 64"><rect x="6" y="16" width="52" height="32" rx="4" fill="#1E0E00" stroke="#C67AB5"/><path d="M26 26l14 8-14 8Z" fill="#C67AB5"/></svg>`;
+  return '';
+}
+</script>
+</body>
+</html>
