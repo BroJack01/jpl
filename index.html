@@ -24,7 +24,7 @@
     .screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .25s ease;overflow:hidden}
     .screen.active{opacity:1;pointer-events:all}
     .header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:linear-gradient(180deg,var(--dark) 0%,transparent 100%);position:relative;z-index:10;flex-shrink:0}
-    .header-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .header-logo{display:flex;align-items:center;gap:10px}.header-logo img{width:36px;height:36px;object-fit:contain}.header-logo span{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     .header-balance{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--surface2);border-radius:20px;padding:6px 14px;cursor:pointer}
     .balance-icon{width:16px;height:16px;border-radius:50%;background:conic-gradient(var(--gold) 0deg,var(--orange) 120deg,var(--gold-light) 240deg,var(--gold) 360deg);flex-shrink:0}
     .balance-val{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold-light);letter-spacing:1px}
@@ -192,7 +192,7 @@
         <defs><linearGradient id="jg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#D4A017"/><stop offset="100%" stop-color="#E85200"/></linearGradient></defs>
       </svg>
     </div>
-    <div class="onboard-title"><h1>JPL</h1><p>Joelhood Pictures Limited</p></div>
+    <div class="onboard-title"><img src="/jpl/logo.png" alt="JPL" style="width:140px;height:140px;object-fit:contain;margin-bottom:8px"><p>Joelhood Pictures Limited</p></div>
     <div class="onboard-input-group">
       <label>Your Phone Number</label>
       <input type="tel" id="phone-input" class="input-field" placeholder="e.g. 0977 123 456" inputmode="tel">
@@ -203,7 +203,7 @@
   <!-- HOME -->
   <div id="screen-home" class="screen">
     <div class="header">
-      <div class="header-logo">JPL</div>
+      <div class="header-logo"><img src="/jpl/logo.png" alt="JPL"><span>JPL</span></div>
       <div class="header-balance" onclick="showScreen('topup')">
         <div class="balance-icon"></div>
         <div><div class="balance-val" id="balance-display">0</div><div class="balance-label">Credits</div></div>
