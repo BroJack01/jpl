@@ -8,8 +8,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="JPL">
   <title>JPL</title>
+  <link rel="manifest" href="/jpl/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/jpl/sw.js'))}</script>
   <style>
     :root {
       --orange:#E85200;--orange-hot:#FF6A1A;--gold:#D4A017;--gold-light:#F0C040;
