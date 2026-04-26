@@ -413,9 +413,12 @@ window.addEventListener('load', () => {
 function renderAds() {
   const ads = S.catalog.ads || {};
   const poster = ads['poster'] || ads['gif'] || '';
+  const link   = ads['link'] || '';
   if (poster) {
-    document.getElementById('ad-poster').innerHTML =
-      `<div class="ad-slot"><img src="${poster}" alt=""></div>`;
+    const inner = `<img src="${poster}" alt="" style="width:100%;height:auto;display:block;border-radius:var(--radius)">`;
+    document.getElementById('ad-poster').innerHTML = link
+      ? `<div class="ad-slot" style="cursor:pointer"><a href="${link}" target="_blank" rel="noopener">${inner}</a></div>`
+      : `<div class="ad-slot">${inner}</div>`;
   } else {
     document.getElementById('ad-poster').innerHTML = '';
   }
