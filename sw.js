@@ -21,15 +21,25 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('workers.dev') || e.request.url.includes('googleapis') || e.request.url.includes('storage.googleapis')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-  } else {
-    e.respondWith(
-      fetch(e.request).then(response => {
+  // Pass through API calls and external resources without caching
+  if (e.request.url.includes('workers.dev') || 
+      e.request.url.includes('googleapis') || 
+      e.request.url.includes('storage.googleapis') ||
+      e.request.url.includes('fonts.g') ||
+      e.request.url.includes('forms.gle') ||
+      e.request.url.includes('wa.me')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  // Cache first for app assets
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(response => {
         const clone = response.clone();
         caches.open(CACHE).then(cache => cache.put(e.request, clone));
         return response;
-      }).catch(() => caches.match(e.request))
-    );
-  }
+      });
+    })
+  );
 });
