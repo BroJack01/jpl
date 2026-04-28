@@ -421,7 +421,7 @@
         </div>
       </div>
       <div class="install-sheet-actions">
-        <button class="btn-install-main" id="btn-install-main" onclick="triggerInstall()">Install</button>
+        <button class="btn-install-main" id="btn-install-main">Install</button>
         <button class="btn-install-dismiss-sheet" onclick="dismissInstall()">Not Now</button>
       </div>
     </div>
@@ -946,14 +946,16 @@ function shouldShowInstall() {
 
 function showInstallSheet() {
   if (!shouldShowInstall()) return;
-  const sheet = document.getElementById('install-sheet');
+  const btn = document.getElementById('btn-install-main');
   if (isIOS()) {
     document.getElementById('ios-steps').classList.add('visible');
-    const btn = document.getElementById('btn-install-main');
     btn.textContent = 'Got It';
-    btn.onclick = dismissInstall;
+    btn.onclick = function() { dismissInstall(); };
+  } else {
+    btn.textContent = 'Install';
+    btn.onclick = function() { triggerInstall(); };
   }
-  sheet.classList.add('visible');
+  document.getElementById('install-sheet').classList.add('visible');
 }
 
 function scheduleInstallPrompt() {
