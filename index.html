@@ -421,7 +421,7 @@
         </div>
       </div>
       <div class="install-sheet-actions">
-        <button class="btn-install-main" id="btn-install-main">Install</button>
+        <button class="btn-install-main" id="btn-install-main" onclick="handleInstallBtn()">Got It — Install JPL</button>
         <button class="btn-install-dismiss-sheet" onclick="dismissInstall()">Not Now</button>
       </div>
     </div>
@@ -946,16 +946,19 @@ function shouldShowInstall() {
 
 function showInstallSheet() {
   if (!shouldShowInstall()) return;
-  const btn = document.getElementById('btn-install-main');
-  if (isIOS()) {
-    document.getElementById('ios-steps').classList.add('visible');
-    btn.textContent = 'Got It';
-    btn.onclick = function() { dismissInstall(); };
-  } else {
-    btn.textContent = 'Install';
-    btn.onclick = function() { triggerInstall(); };
-  }
+  // Always show manual steps — works for both iOS and Android fallback
+  document.getElementById('ios-steps').classList.add('visible');
   document.getElementById('install-sheet').classList.add('visible');
+}
+
+function handleInstallBtn() {
+  // If Android has a native prompt available, use it
+  if (installPrompt) {
+    triggerInstall();
+  } else {
+    // iOS or no prompt — dismiss after reading instructions
+    dismissInstall();
+  }
 }
 
 function scheduleInstallPrompt() {
