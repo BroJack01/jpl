@@ -949,7 +949,9 @@ function showInstallSheet() {
   const sheet = document.getElementById('install-sheet');
   if (isIOS()) {
     document.getElementById('ios-steps').classList.add('visible');
-    document.getElementById('btn-install-main').style.display = 'none';
+    const btn = document.getElementById('btn-install-main');
+    btn.textContent = 'Got It';
+    btn.onclick = dismissInstall;
   }
   sheet.classList.add('visible');
 }
