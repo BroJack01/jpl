@@ -1,4 +1,4 @@
-const CACHE = 'jpl-v13';
+const CACHE = 'jpl-v14';
 const ASSETS = [
   '/jpl/',
   '/jpl/index.html',
