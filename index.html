@@ -152,9 +152,17 @@
     /* VIDEO */
     #video-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
     #video-overlay.visible{display:flex}
-    #video-el{width:100%;flex:1;object-fit:contain;background:#000}
-    .video-controls{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--dark)}
-    .btn-video-close{background:none;border:1px solid var(--surface2);border-radius:var(--radius-sm);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;padding:8px 16px}
+    #video-el{width:100%;flex:1;object-fit:contain;background:#000;display:block}
+    .video-controls{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--dark);flex-shrink:0}
+    .btn-video-close{background:none;border:1px solid var(--surface2);border-radius:var(--radius-sm);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;padding:8px 16px;flex-shrink:0}
+    .video-info{flex:1;overflow:hidden}
+    .video-info-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .video-progress-wrap{width:100%;height:3px;background:var(--surface2);border-radius:2px;cursor:pointer;margin-top:4px}
+    .video-progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));border-radius:2px;width:0%;pointer-events:none}
+    .btn-video-play{width:40px;height:40px;border-radius:50%;background:var(--orange);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .btn-video-play svg{width:16px;height:16px;fill:white;stroke:none}
+    .btn-video-fs{width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .btn-video-fs svg{width:16px;height:16px;stroke:var(--text);fill:none;stroke-width:2}
 
     /* PREVIEW */
     .btn-preview{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-muted);background:none;border:1px solid var(--surface2);border-radius:4px;padding:4px 8px;cursor:pointer;white-space:nowrap}
@@ -402,10 +410,21 @@
 
   <!-- VIDEO OVERLAY -->
   <div id="video-overlay">
-    <video id="video-el" controls playsinline></video>
+    <video id="video-el" playsinline webkit-playsinline></video>
     <div class="video-controls">
-      <button class="btn-video-close" onclick="closeVideo()">✕ Close</button>
-      <div id="video-title" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+      <button class="btn-video-close" onclick="closeVideo()">✕</button>
+      <div class="video-info">
+        <div class="video-info-title" id="video-title"></div>
+        <div class="video-progress-wrap" id="video-progress-wrap" onclick="seekVideo(event)">
+          <div class="video-progress-fill" id="video-progress-fill"></div>
+        </div>
+      </div>
+      <button class="btn-video-play" id="btn-video-play" onclick="toggleVideoPlay()">
+        <svg id="video-play-icon" viewBox="0 0 16 16"><path d="M5 3l9 5-9 5V3z"/></svg>
+      </button>
+      <button class="btn-video-fs" onclick="toggleFullscreen()" title="Fullscreen">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      </button>
     </div>
   </div>
 
@@ -837,6 +856,8 @@ function playAudio(url, title, type, contentId) {
   }).catch(()=>toast('Tap play again',''));
 }
 
+let videoProgressTimer = null;
+
 function playVideo(url, title) {
   // Pause audio if playing
   if (isPlaying) {
@@ -849,14 +870,66 @@ function playVideo(url, title) {
   videoEl.src = url;
   document.getElementById('video-title').textContent = title;
   document.getElementById('video-overlay').classList.add('visible');
-  videoEl.play().catch(() => {});
+  videoEl.play().then(() => {
+    document.getElementById('video-play-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    startVideoProgress();
+  }).catch(() => {});
 }
 
 function closeVideo() {
   videoEl.pause();
   videoEl.src = '';
+  clearInterval(videoProgressTimer);
   document.getElementById('video-overlay').classList.remove('visible');
+  document.getElementById('video-progress-fill').style.width = '0%';
+  document.getElementById('video-play-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
 }
+
+function toggleVideoPlay() {
+  if (videoEl.paused) {
+    videoEl.play();
+    document.getElementById('video-play-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    startVideoProgress();
+  } else {
+    videoEl.pause();
+    document.getElementById('video-play-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
+    clearInterval(videoProgressTimer);
+  }
+}
+
+function startVideoProgress() {
+  clearInterval(videoProgressTimer);
+  videoProgressTimer = setInterval(() => {
+    if (!videoEl.duration) return;
+    document.getElementById('video-progress-fill').style.width = (videoEl.currentTime / videoEl.duration * 100) + '%';
+  }, 500);
+}
+
+function seekVideo(e) {
+  if (!videoEl.duration) return;
+  const bar  = document.getElementById('video-progress-wrap');
+  const rect = bar.getBoundingClientRect();
+  const pct  = (e.clientX - rect.left) / rect.width;
+  videoEl.currentTime = pct * videoEl.duration;
+}
+
+function toggleFullscreen() {
+  const overlay = document.getElementById('video-overlay');
+  if (!document.fullscreenElement) {
+    overlay.requestFullscreen().catch(() => {
+      // iOS fallback — use webkitEnterFullscreen on video element
+      if (videoEl.webkitEnterFullscreen) videoEl.webkitEnterFullscreen();
+    });
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+videoEl.addEventListener('ended', () => {
+  clearInterval(videoProgressTimer);
+  document.getElementById('video-play-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
+  document.getElementById('video-progress-fill').style.width = '0%';
+});
 
 function togglePlayPause() {
   if (isPlaying) {
