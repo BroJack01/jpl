@@ -152,14 +152,23 @@
     /* VIDEO */
     #video-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
     #video-overlay.visible{display:flex}
-    #video-el{width:100%;flex:1;object-fit:contain;background:#000}
-    .video-controls{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--dark)}
-    .btn-video-close{background:none;border:1px solid var(--surface2);border-radius:var(--radius-sm);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;padding:8px 16px}
-    /* Hide download button from native video controls across all browsers */
-    video::-webkit-media-controls-download-button{display:none!important}
-    video::-webkit-media-controls-enclosure{overflow:hidden}
-    video::-moz-media-controls-download-button{display:none!important}
-    video::cue{display:none}
+    #video-el{width:100%;flex:1;object-fit:contain;background:#000;display:block}
+    .video-ui{position:relative;flex:1;display:flex;align-items:center;justify-content:center;background:#000}
+    .video-tap-area{position:absolute;inset:0;z-index:2}
+    .video-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,transparent 100%);position:absolute;bottom:0;left:0;right:0;z-index:3;transition:opacity .3s}
+    .video-bar.hidden{opacity:0;pointer-events:none}
+    .btn-video-close{background:rgba(0,0,0,.6);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:absolute;top:16px;left:16px;z-index:10}
+    .btn-video-close svg{width:16px;height:16px;stroke:white;fill:none;stroke-width:2.5}
+    .video-title-bar{position:absolute;top:0;left:0;right:0;padding:14px 60px 14px 60px;background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%);z-index:4}
+    .video-title-text{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+    .video-progress-row{flex:1;display:flex;flex-direction:column;gap:4px}
+    .video-time{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:rgba(255,255,255,.7);letter-spacing:.5px}
+    .video-seek{width:100%;height:3px;background:rgba(255,255,255,.3);border-radius:2px;cursor:pointer;position:relative}
+    .video-seek-fill{height:100%;background:var(--orange);border-radius:2px;pointer-events:none}
+    .btn-vid-pp{width:44px;height:44px;border-radius:50%;background:var(--orange);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .btn-vid-pp svg{width:18px;height:18px;fill:white;stroke:none}
+    .btn-vid-fs{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .btn-vid-fs svg{width:16px;height:16px;stroke:white;fill:none;stroke-width:2}
 
     /* PREVIEW */
     .btn-preview{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-muted);background:none;border:1px solid var(--surface2);border-radius:4px;padding:4px 8px;cursor:pointer;white-space:nowrap}
@@ -407,10 +416,29 @@
 
   <!-- VIDEO OVERLAY -->
   <div id="video-overlay">
-    <video id="video-el" controls playsinline></video>
-    <div class="video-controls">
-      <button class="btn-video-close" onclick="closeVideo()">✕ Close</button>
-      <div id="video-title" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+    <div class="video-ui">
+      <video id="video-el" playsinline webkit-playsinline x-webkit-airplay="allow"></video>
+      <div class="video-title-bar">
+        <div class="video-title-text" id="video-title"></div>
+      </div>
+      <button class="btn-video-close" onclick="closeVideo()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="video-tap-area" onclick="toggleVideoControls()"></div>
+      <div class="video-bar" id="video-bar">
+        <button class="btn-vid-pp" id="btn-vid-pp" onclick="toggleVideoPlay()">
+          <svg id="vid-pp-icon" viewBox="0 0 16 16"><path d="M5 3l9 5-9 5V3z"/></svg>
+        </button>
+        <div class="video-progress-row">
+          <div class="video-seek" id="video-seek" onclick="seekVideo(event)">
+            <div class="video-seek-fill" id="video-seek-fill"></div>
+          </div>
+          <div class="video-time" id="video-time">0:00 / 0:00</div>
+        </div>
+        <button class="btn-vid-fs" onclick="goFullscreen()" title="Fullscreen">
+          <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -842,6 +870,9 @@ function playAudio(url, title, type, contentId) {
   }).catch(()=>toast('Tap play again',''));
 }
 
+let videoBarTimer = null;
+let videoProgTimer = null;
+
 function playVideo(url, title) {
   if (isPlaying) {
     audioEl.pause();
@@ -853,14 +884,104 @@ function playVideo(url, title) {
   videoEl.src = url;
   document.getElementById('video-title').textContent = title;
   document.getElementById('video-overlay').classList.add('visible');
-  videoEl.play().catch(() => {});
+  document.getElementById('video-bar').classList.remove('hidden');
+  videoEl.play().then(() => {
+    document.getElementById('vid-pp-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    startVideoProgress();
+    scheduleHideControls();
+  }).catch(() => {});
 }
 
 function closeVideo() {
   videoEl.pause();
   videoEl.src = '';
+  clearInterval(videoProgTimer);
+  clearTimeout(videoBarTimer);
   document.getElementById('video-overlay').classList.remove('visible');
+  document.getElementById('vid-pp-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
+  document.getElementById('video-seek-fill').style.width = '0%';
+  document.getElementById('video-time').textContent = '0:00 / 0:00';
 }
+
+function toggleVideoPlay() {
+  if (videoEl.paused) {
+    videoEl.play();
+    document.getElementById('vid-pp-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    startVideoProgress();
+    scheduleHideControls();
+  } else {
+    videoEl.pause();
+    document.getElementById('vid-pp-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
+    clearInterval(videoProgTimer);
+    showVideoControls();
+  }
+}
+
+function toggleVideoControls() {
+  const bar = document.getElementById('video-bar');
+  if (bar.classList.contains('hidden')) {
+    showVideoControls();
+    if (!videoEl.paused) scheduleHideControls();
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+function showVideoControls() {
+  document.getElementById('video-bar').classList.remove('hidden');
+  clearTimeout(videoBarTimer);
+}
+
+function scheduleHideControls() {
+  clearTimeout(videoBarTimer);
+  videoBarTimer = setTimeout(() => {
+    if (!videoEl.paused) {
+      document.getElementById('video-bar').classList.add('hidden');
+    }
+  }, 3000);
+}
+
+function startVideoProgress() {
+  clearInterval(videoProgTimer);
+  videoProgTimer = setInterval(() => {
+    if (!videoEl.duration) return;
+    const pct = videoEl.currentTime / videoEl.duration * 100;
+    document.getElementById('video-seek-fill').style.width = pct + '%';
+    document.getElementById('video-time').textContent = formatTime(videoEl.currentTime) + ' / ' + formatTime(videoEl.duration);
+  }, 500);
+}
+
+function seekVideo(e) {
+  if (!videoEl.duration) return;
+  const bar  = document.getElementById('video-seek');
+  const rect = bar.getBoundingClientRect();
+  const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  videoEl.currentTime = pct * videoEl.duration;
+}
+
+function goFullscreen() {
+  // Call on the video element directly — hands control to OS native fullscreen
+  if (videoEl.requestFullscreen) {
+    videoEl.requestFullscreen();
+  } else if (videoEl.webkitRequestFullscreen) {
+    videoEl.webkitRequestFullscreen();
+  } else if (videoEl.webkitEnterFullscreen) {
+    videoEl.webkitEnterFullscreen();
+  }
+}
+
+function formatTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+videoEl.addEventListener('ended', () => {
+  clearInterval(videoProgTimer);
+  document.getElementById('vid-pp-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
+  document.getElementById('video-seek-fill').style.width = '100%';
+  showVideoControls();
+});
 
 function togglePlayPause() {
   if (isPlaying) {
