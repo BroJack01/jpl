@@ -810,13 +810,25 @@ function playAudio(url, title, type, contentId) {
 }
 
 function playVideo(url, title) {
-  videoEl.src=url;
-  document.getElementById('video-title').textContent=title;
+  // Pause audio if playing
+  if (isPlaying) {
+    audioEl.pause();
+    isPlaying = false;
+    document.getElementById('player-disc').classList.remove('playing');
+    document.getElementById('playpause-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
+    clearInterval(progressTimer);
+  }
+  videoEl.src = url;
+  document.getElementById('video-title').textContent = title;
   document.getElementById('video-overlay').classList.add('visible');
-  videoEl.play().catch(()=>{});
+  videoEl.play().catch(() => {});
 }
 
-function closeVideo() { videoEl.pause(); videoEl.src=''; document.getElementById('video-overlay').classList.remove('visible'); }
+function closeVideo() {
+  videoEl.pause();
+  videoEl.src = '';
+  document.getElementById('video-overlay').classList.remove('visible');
+}
 
 function togglePlayPause() {
   if (isPlaying) {
