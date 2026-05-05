@@ -152,8 +152,11 @@
     /* VIDEO */
     #video-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
     #video-overlay.visible{display:flex}
-    #video-el{width:100%;flex:1;object-fit:contain;background:#000;display:block}
+    #video-el{width:100%;flex:1;object-fit:contain;background:#000;display:block;-webkit-touch-callout:none;user-select:none}
     .video-ui{position:relative;flex:1;display:flex;align-items:center;justify-content:center;background:#000}
+    .video-watermark{position:absolute;bottom:60px;right:12px;z-index:5;opacity:0;transition:opacity .3s;pointer-events:none}
+    .video-watermark.visible{opacity:0.35}
+    .video-watermark img{width:36px;height:36px;object-fit:contain}
     .video-tap-area{position:absolute;inset:0;z-index:2}
     .video-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,transparent 100%);position:absolute;bottom:0;left:0;right:0;z-index:3;transition:opacity .3s}
     .video-bar.hidden{opacity:0;pointer-events:none}
@@ -167,8 +170,7 @@
     .video-seek-fill{height:100%;background:var(--orange);border-radius:2px;pointer-events:none}
     .btn-vid-pp{width:44px;height:44px;border-radius:50%;background:var(--orange);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
     .btn-vid-pp svg{width:18px;height:18px;fill:white;stroke:none}
-    .btn-vid-fs{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-    .btn-vid-fs svg{width:16px;height:16px;stroke:white;fill:none;stroke-width:2}
+
 
     /* PREVIEW */
     .btn-preview{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-muted);background:none;border:1px solid var(--surface2);border-radius:4px;padding:4px 8px;cursor:pointer;white-space:nowrap}
@@ -425,6 +427,9 @@
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <div class="video-tap-area" onclick="toggleVideoControls()"></div>
+      <div class="video-watermark" id="video-watermark">
+        <img src="/jpl/logo.png" alt="JPL">
+      </div>
       <div class="video-bar" id="video-bar">
         <button class="btn-vid-pp" id="btn-vid-pp" onclick="toggleVideoPlay()">
           <svg id="vid-pp-icon" viewBox="0 0 16 16"><path d="M5 3l9 5-9 5V3z"/></svg>
@@ -435,9 +440,7 @@
           </div>
           <div class="video-time" id="video-time">0:00 / 0:00</div>
         </div>
-        <button class="btn-vid-fs" onclick="goFullscreen()" title="Fullscreen">
-          <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
-        </button>
+
       </div>
     </div>
   </div>
@@ -520,6 +523,7 @@ const S = {
 const audioEl   = document.getElementById('audio-el');
 const previewEl = document.getElementById('preview-el');
 const videoEl   = document.getElementById('video-el');
+videoEl.addEventListener('contextmenu', e => e.preventDefault());
 let isPlaying=false, currentItem=null, progressTimer=null, selectedAmount='5';
 let repeatOn=false, previewActive=false;
 
@@ -887,6 +891,7 @@ function playVideo(url, title) {
   document.getElementById('video-bar').classList.remove('hidden');
   videoEl.play().then(() => {
     document.getElementById('vid-pp-icon').innerHTML = '<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>';
+    document.getElementById('video-watermark').classList.add('visible');
     startVideoProgress();
     scheduleHideControls();
   }).catch(() => {});
@@ -898,6 +903,7 @@ function closeVideo() {
   clearInterval(videoProgTimer);
   clearTimeout(videoBarTimer);
   document.getElementById('video-overlay').classList.remove('visible');
+  document.getElementById('video-watermark').classList.remove('visible');
   document.getElementById('vid-pp-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
   document.getElementById('video-seek-fill').style.width = '0%';
   document.getElementById('video-time').textContent = '0:00 / 0:00';
@@ -957,17 +963,6 @@ function seekVideo(e) {
   const rect = bar.getBoundingClientRect();
   const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   videoEl.currentTime = pct * videoEl.duration;
-}
-
-function goFullscreen() {
-  // Call on the video element directly — hands control to OS native fullscreen
-  if (videoEl.requestFullscreen) {
-    videoEl.requestFullscreen();
-  } else if (videoEl.webkitRequestFullscreen) {
-    videoEl.webkitRequestFullscreen();
-  } else if (videoEl.webkitEnterFullscreen) {
-    videoEl.webkitEnterFullscreen();
-  }
 }
 
 function formatTime(secs) {
