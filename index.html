@@ -149,9 +149,18 @@
     .btn-repeat svg{width:14px;height:14px;stroke:var(--text-muted);fill:none;stroke-width:2}
     .btn-repeat.active svg{stroke:white}
 
-    /* VIDEO */
-    #video-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
-    #video-overlay.visible{display:flex}
+    /* VIDEO — landscape default for video content (human behaviour: tilt phone for video) */
+    #video-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;overflow:hidden}
+    #video-overlay.visible{display:block}
+    /* Inner container that gets rotated. When phone is portrait, this rotates 90deg
+       to present the UI in landscape — prompting the client to tilt the phone. */
+    .video-rotator{position:absolute;top:50%;left:50%;width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);transform-origin:center center;display:flex;flex-direction:column;background:#000}
+    /* When phone is in landscape, no rotation needed */
+    @media (orientation: landscape){
+      .video-rotator{width:100vw;height:100vh;transform:translate(-50%,-50%) rotate(0deg)}
+    }
+    /* When the loaded video is vertical, override and stay upright */
+    #video-overlay.vertical .video-rotator{width:100vw;height:100vh;transform:translate(-50%,-50%) rotate(0deg)}
     #video-el{width:100%;flex:1;object-fit:contain;background:#000;display:block;-webkit-touch-callout:none;user-select:none}
     .video-ui{position:relative;flex:1;display:flex;align-items:center;justify-content:center;background:#000}
     .video-watermark{position:absolute;bottom:60px;right:12px;z-index:5;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -418,6 +427,7 @@
 
   <!-- VIDEO OVERLAY -->
   <div id="video-overlay">
+    <div class="video-rotator">
     <div class="video-ui">
       <video id="video-el" playsinline webkit-playsinline x-webkit-airplay="allow"></video>
       <div class="video-title-bar">
@@ -442,6 +452,7 @@
         </div>
 
       </div>
+    </div>
     </div>
   </div>
 
@@ -524,6 +535,17 @@ const audioEl   = document.getElementById('audio-el');
 const previewEl = document.getElementById('preview-el');
 const videoEl   = document.getElementById('video-el');
 videoEl.addEventListener('contextmenu', e => e.preventDefault());
+
+// Detect video orientation on metadata load.
+// If vertical, override the default landscape rotation.
+videoEl.addEventListener('loadedmetadata', () => {
+  const overlay = document.getElementById('video-overlay');
+  if (videoEl.videoHeight > videoEl.videoWidth) {
+    overlay.classList.add('vertical');
+  } else {
+    overlay.classList.remove('vertical');
+  }
+});
 let isPlaying=false, currentItem=null, progressTimer=null, selectedAmount='5';
 let repeatOn=false, previewActive=false;
 
@@ -902,7 +924,9 @@ function closeVideo() {
   videoEl.src = '';
   clearInterval(videoProgTimer);
   clearTimeout(videoBarTimer);
-  document.getElementById('video-overlay').classList.remove('visible');
+  const overlay = document.getElementById('video-overlay');
+  overlay.classList.remove('visible');
+  overlay.classList.remove('vertical');
   document.getElementById('video-watermark').classList.remove('visible');
   document.getElementById('vid-pp-icon').innerHTML = '<path d="M5 3l9 5-9 5V3z"/>';
   document.getElementById('video-seek-fill').style.width = '0%';
