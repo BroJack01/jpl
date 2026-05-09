@@ -747,7 +747,7 @@ function itemRow(item, num) {
   if (unlocked) {
     actionsHtml += `<span class="unlocked-badge" style="color:${cfg.color}">UNLOCKED</span>`;
   } else {
-    actionsHtml += `<button class="btn-unlock-small" style="color:${cfg.color};border-color:${cfg.color}" onclick="handleUnlock('${item.contentId}','${item.type}',event)">6 ◆</button>`;
+    actionsHtml += `<button class="btn-unlock-small" style="color:${cfg.color};border-color:${cfg.color}" onclick="handleUnlock('${item.contentId}','${item.type}',event)">${item.unlockCost || 6} ◆</button>`;
   }
   actionsHtml += `<button class="btn-play${active?' playing':''}" id="play-btn-${item.contentId}" style="${active?'background:'+cfg.color+';border-color:'+cfg.color:''}" onclick="handlePlay('${item.contentId}','${escQ(item.title)}','${item.type}',event)">
     <svg viewBox="0 0 16 16">${active?'<rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/>':'<path d="M5 3l9 5-9 5V3z"/>'}</svg>
@@ -1078,7 +1078,10 @@ audioEl.addEventListener('error', () => toast('Playback error. Check connection.
 // ── UNLOCK ──
 async function handleUnlock(contentId, type, e) {
   e.stopPropagation();
-  if (S.balance < 6) { toast('Need 6 credits to unlock','error'); setTimeout(()=>showScreen('topup'),1000); return; }
+  // Find unlock cost from catalog item, fallback to 6
+  const item = S.catalog.content.find(c => c.contentId === contentId);
+  const cost = item && item.unlockCost ? Number(item.unlockCost) : 6;
+  if (S.balance < cost) { toast('Need ' + cost + ' credits to unlock','error'); setTimeout(()=>showScreen('topup'),1000); return; }
   try {
     const d = await api('unlockContent', { contentId });
     if (d.error) { toast(d.error,'error'); return; }
